@@ -1,0 +1,1 @@
+# TODO: Implementirati Typer CLI sučelje za SignalContract v0.1
