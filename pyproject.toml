@@ -7,10 +7,12 @@ authors = [
     { name = "Ante Grčić", email = "antegrcic550@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "typer>=0.27.1",
+]
 
 [project.scripts]
-signalcontract = "signalcontract:main"
+signalcontract = "signalcontract.cli:app"
 
 [build-system]
 requires = ["uv_build>=0.11.31,<0.12.0"]
