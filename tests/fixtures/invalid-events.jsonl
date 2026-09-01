@@ -1,0 +1,2 @@
+{"event_type": "login", "actor": "user-42", "action": "login", "target": "admin_panel", "outcome":"success", "reason": "authenticated", "timestamp": "2026-09-01T12:00:00Z"}
+{"event_type": "delete_database", "actor": "user-42", "action": "delete_database", "target": "prod_db",
