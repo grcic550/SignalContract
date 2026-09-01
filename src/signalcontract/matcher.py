@@ -1,11 +1,13 @@
 
-def matcher(contract: dict, events: list):
-    """Matches a list of SecurityEvent objects against a contract 
-    dictionary and returns a list of matched events."""
+from signalcontract.models import Contract
+
+
+def matcher(contract: Contract, events: list):
+    """Matches a list of events against the rules defined in a security contract."""
 
     matched_events = []
 
-    rules = contract.get("expect", {})
+    rules = contract.expect
 
     if not rules:
         return matched_events  # No rules to match against
