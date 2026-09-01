@@ -36,3 +36,30 @@ class SecurityEvent:
             timestamp=data["timestamp"],
             correlation_id=data.get("correlation_id")
         )
+
+@dataclass
+class Contract:
+    """Respresents a security contract with its associated metadata and events."""
+
+    version: int
+    scenario: str
+    expect: dict[str, str]
+
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Converts a raw dictionary int a type-safe Contract model.
+        Rejects the input and raises a ValidationError if required fields are missing."""
+
+        required_fields = ["version", "scenario", "expect"]
+
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise ValidationError(f"Missing required contract field {field}.")
+
+        return cls(
+            version = data["version"],
+            scenario = data["scenario"],
+            expect = data["expect"]
+        )
+        

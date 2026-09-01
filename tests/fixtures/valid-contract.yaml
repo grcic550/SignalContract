@@ -1,0 +1,10 @@
+version: 1
+scenario: denied_admin_db_deletion
+
+expect:
+  event_type: authorization.denied
+  actor: user-42
+  action: delete_database
+  target: prod_db
+  outcome: denied
+  reason: insufficient_privileges

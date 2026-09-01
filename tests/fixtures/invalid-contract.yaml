@@ -1,0 +1,4 @@
+version: 1
+
+expect:
+  event_type: authorization.denied
