@@ -1,5 +1,5 @@
 import typer
-from signalcontract.contract import parse_yaml
+from signalcontract.contract import load_contract as parse_yaml
 from signalcontract.events import parse_log_file
 from signalcontract.matcher import matcher
 from signalcontract.errors import SignalContractError
@@ -18,7 +18,7 @@ def verify(contract: str = typer.Option(..., "--contract"),
         matched_events = matcher(contract_data, event_models)
 
     except SignalContractError as e:
-        typer.echo(f"Error: {e}",fg=typer.colors.RED, bold=True, err=True)
+        typer.secho(f"Error: {e}",fg=typer.colors.RED, bold=True, err=True)
         raise typer.Exit(code = 1)
 
     if matched_events:
@@ -55,12 +55,25 @@ def verify(contract: str = typer.Option(..., "--contract"),
 
         raise typer.Exit(code = 0)
 
-    typer.echo(f"FAIL: No events matched the contract.",fg=typer.colors.RED, bold=True, err=True)
+    typer.secho(f"FAIL: No events matched the contract.",fg=typer.colors.RED, bold=True, err=True)
     raise typer.Exit(code = 1)
 
 @app.command()
 def version():
     typer.echo("SignalContract 0.1.0")
+
+
+@app.command()
+def validate(contract: str = typer.Option(..., "--contract")):
+    """Validate a contract file for correctness."""
+
+    try:
+        parse_yaml(contract)
+        typer.secho(f"Contract file {contract} is valid.", fg=typer.colors.GREEN, bold=True)
+
+    except Exception as e:
+        typer.secho(f"Error: {e}", fg=typer.colors.RED, bold=True, err=True)
+        raise typer.Exit(code = 1)
     
 if __name__ == "__main__":
     app()

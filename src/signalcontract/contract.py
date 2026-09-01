@@ -1,11 +1,25 @@
 import yaml
+from signalcontract.models import Contract
+from signalcontract.errors import EventParseError, ValidationError
 
-def parse_yaml(file_path: str):
-    """Parses a YAML file and returns its contents as a Python dictionary."""
 
-    with open(file_path, "r",encoding = "utf-8") as file:
+def load_contract(file_path: str) -> Contract:
+    """Loads a security contract from a YAML file and returns it as a Contract."""
 
-        contract_data = yaml.safe_load(file)
+    with open(file_path, "r", encoding="utf-8") as file:
 
-    return contract_data
+        try:
+            contract_data = yaml.safe_load(file)
+            contract = Contract.from_dict(contract_data)
+
+            return contract
+
+        except yaml.YAMLError as e:
+            raise EventParseError(f"Malformed YAML file:{e}")
+        
+        except ValidationError as e:
+            raise EventParseError(f"Validation error in contract file: {e}")
+            
+
+
 

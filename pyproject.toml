@@ -6,8 +6,9 @@ readme = "README.md"
 authors = [
     { name = "Ante Grčić", email = "antegrcic550@gmail.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
+    "pyyaml>=6.0.3",
     "typer>=0.27.1",
 ]
 
