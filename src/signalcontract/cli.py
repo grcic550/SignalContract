@@ -9,8 +9,20 @@ app = typer.Typer()
 @app.command()
 def verify(contract: str = typer.Option(..., "--contract"), 
            events: str = typer.Option(..., "--events")):
-    
+
     """Verify events against the contract."""
+    if not contract and not events:
+        typer.secho("Error: No contract or events file provided.", fg=typer.colors.RED, bold=True, err=True)
+        raise typer.Exit(code = 1)
+
+    if not events:
+        typer.secho("Error: No events file provided.", fg=typer.colors.RED, bold=True, err=True)
+        raise typer.Exit(code = 1)
+
+    if not contract:
+        typer.secho("Error: No contract file provided.", fg=typer.colors.RED, bold=True, err=True)
+        raise typer.Exit(code = 1)
+
     
     try:
         contract_data = parse_yaml(contract)
@@ -19,6 +31,9 @@ def verify(contract: str = typer.Option(..., "--contract"),
 
     except SignalContractError as e:
         typer.secho(f"Error: {e}",fg=typer.colors.RED, bold=True, err=True)
+        raise typer.Exit(code = 1)
+    except FileNotFoundError as e:
+        typer.secho(f"Error: File not found: {e.filename}",fg=typer.colors.RED, bold=True, err=True)
         raise typer.Exit(code = 1)
 
     if matched_events:

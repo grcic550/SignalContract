@@ -64,4 +64,84 @@ def test_verify_rejects_malformed_events_file():
     assert result.exit_code == 1
     assert "Error: Malformed JSONL line 2:" in result.output
     
-    
+def test_verify_no_events_file_raises_error():
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "tests/fixtures/valid-contract.yaml",
+            "--events", ""
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "Error: No events file provided." in result.output
+
+def test_verify_no_contract_file_raises_error():
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "",
+            "--events", "tests/fixtures/valid-events.json"
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "Error: No contract file provided." in result.output
+
+def test_verify_no_file_provided_raises_error():
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "",
+            "--events", ""
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "Error: No contract or events file provided." in result.output
+
+def test_verify_no_file_error(tmp_path):
+    """Test that the verify function exits with error when a file is not found."""
+
+    missing_contract_file = tmp_path / "missing_contract.yaml"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", str(missing_contract_file),
+            "--events", "tests/fixtures/valid-events.json"
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "Error: File not found: " in result.output
+    assert str(missing_contract_file) in result.output
+
+def test_verify_no_events_file_error(tmp_path):
+
+    missing_events_file = tmp_path / "missing_events.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "tests/fixtures/valid-contract.yaml",
+            "--events", str(missing_events_file)
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "Error: File not found: " in result.output
+    assert str(missing_events_file) in result.output
