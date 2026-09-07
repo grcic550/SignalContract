@@ -10,10 +10,19 @@ def load_contract(file_path: str) -> Contract:
 
         try:
             contract_data = yaml.safe_load(file)
+
+            if contract_data is None:
+                raise EventParseError("Contract data is empty. It must contain a mapping of fields.")
+
+            if isinstance(contract_data, dict) is False:
+                raise EventParseError("Contract data is not a dictionary. It must be a mapping of fields.")
+
+            if len(contract_data) == 0:
+                raise EventParseError("Contract data is empty. It must contain a mapping of fields.")
+            
             contract = Contract.from_dict(contract_data)
 
             return contract
-
         except yaml.YAMLError as e:
             raise EventParseError(f"Malformed YAML file:{e}")
         
