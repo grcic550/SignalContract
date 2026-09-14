@@ -35,16 +35,6 @@ def test_verify_passes_when_an_event_matches():
     assert result.exit_code == 0
     assert "PASS: matched 1 event(s)." in result.output
 
-def test_verify_fails_when_no_event_matches():
-
-    """Test that the verify function exits with error when no
-    event matches the contract."""
-
-    runner = CliRunner()
-    result = runner.invoke(app, ["verify", "--contract", "tests/fixtures/valid-contract.yaml", "--events", "tests/fixtures/unmatched-events.jsonl"])
-
-    assert result.exit_code == 1
-    assert "FAIL: No events matched the contract." in result.output
 
 def test_verify_rejects_malformed_events_file():
 
@@ -145,3 +135,81 @@ def test_verify_no_events_file_error(tmp_path):
     assert result.exit_code == 1
     assert "Error: File not found: " in result.output
     assert str(missing_events_file) in result.output
+
+def test_verify_mismatched_fields():
+
+    """Test that the verify function exits with an error when an event has mismatched fields."""
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "tests/fixtures/valid-contract.yaml",
+            "--events", "tests/fixtures/mismatched-events.json"
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "FAIL: MISMATCHED_FIELDS" in result.output
+    assert "Mismatched Fields:" in result.output
+    assert "Field: outcome" in result.output
+
+def test_verify_matched_fields():
+
+    runner = CliRunner();
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "tests/fixtures/valid-contract.yaml",
+            "--events",  "tests/fixtures/valid-events.json"
+        ]
+    )
+
+    assert result.exit_code == 0
+    assert "PASS: matched 1 event(s)." in result.output
+    assert "Match 1:" in result.output
+    assert "Event Type: authorization.denied" in result.output
+    assert "Actor: user-42" in result.output
+    assert "Action: delete_database" in result.output
+    assert "Target: prod_db" in result.output
+    assert "Reason: insufficient_privileges" in result.output
+    assert "Timestamp: 2026-08-25T12:01:15Z" in result.output
+
+def test_verify_no_matching_events():
+
+    """Test that the verify function exits with an error
+    when no event matches the contract."""
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "tests/fixtures/valid-contract.yaml",
+            "--events", "tests/fixtures/unmatched-events.jsonl"
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "FAIL: NO_MATCHING_EVENTS" in result.output
+
+def test_verify_no_rules_defined():
+
+    """Test that the verify function exits with an error
+    when no rules are defined in the contract."""
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "verify",
+            "--contract", "tests/fixtures/no-rules-contract.yaml",
+            "--events", "tests/fixtures/valid-events.json"
+        ]
+    )
+
+    assert result.exit_code == 1
+    assert "FAIL: NO_RULES_DEFINED" in result.output
+

@@ -1,0 +1,5 @@
+version: 1
+
+scenario: no_rules_defined
+
+expect: {}

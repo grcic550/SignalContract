@@ -1,0 +1,38 @@
+[
+  {
+    "event_type": "user.login",
+    "actor": "user-42",
+    "action": "login",
+    "target": "auth_service",
+    "outcome": "success",
+    "reason": "valid_credentials",
+    "timestamp": "2026-09-14T12:00:00Z"
+  },
+  {
+    "event_type": "authorization.denied",
+    "actor": "user-42",
+    "action": "delete_database",
+    "target": "prod_db",
+    "outcome": "success",
+    "reason": "insufficient_privileges",
+    "timestamp": "2026-09-14T12:01:15Z"
+  },
+  {
+    "event_type": "authorization.denied",
+    "actor": "user-99",
+    "action": "delete_database",
+    "target": "prod_db",
+    "outcome": "denied",
+    "reason": "bypass_attempt",
+    "timestamp": "2026-09-14T12:02:30Z"
+  },
+  {
+    "event_type": "authorization.denied",
+    "actor": "user-42",
+    "action": "delete_database",
+    "target": "dev_db",
+    "outcome": "denied",
+    "reason": "insufficient_privileges",
+    "timestamp": "2026-09-14T12:03:45Z"
+  }
+]

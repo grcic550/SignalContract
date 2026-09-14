@@ -41,7 +41,7 @@ def test_missing_expect_raises_validation_error():
     with pytest.raises(ValidationError, match=r"Missing required contract field expect\."):
         Contract.from_dict(contract)
 
-def test_empty_expect_raises_validation_error():
+def test_empty_expect_is_accepted():
 
     contract = {
         "version": 1,
@@ -49,8 +49,11 @@ def test_empty_expect_raises_validation_error():
         "expect": {}
     }
 
-    with pytest.raises(ValidationError, match=r"Missing required contract field expect\."):
-        Contract.from_dict(contract)
+    result = Contract.from_dict(contract)
+
+    assert result.version == 1
+    assert result.scenario == "denied_admin_db_deletion"
+    assert result.expect == {}
 
 def test_expect_not_dict_raises_validation_error():
 
