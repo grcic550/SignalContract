@@ -1,6 +1,6 @@
 [project]
 name = "signalcontract"
-version = "0.0.1"
+version = "0.1.0"
 description = "SignalContract learning and thesis development repository"
 readme = "README.md"
 authors = [
@@ -28,7 +28,7 @@ dev = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py314"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "UP", "B", "SIM", "I"]
