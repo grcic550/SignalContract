@@ -17,7 +17,7 @@ def parse_log_file(file_path: str):
 
     else:
         raise EventParseError(
-            f"Unsupported file extension: {extension}."
+            f"Unsupported file extension: {extension}. "
             f"Supported extensions are .jsonl and .json."
         )
 
@@ -37,7 +37,8 @@ def parse_jsonl_file(file_path: str):
                 event_data = json.loads(line)
                 if not isinstance(event_data, dict):
                     raise EventParseError(
-                        f"JSONL line {line_number} doesnot contain a valid JSON object."
+                        f"JSONL line {line_number} does not "
+                        f"contain a valid JSON object."
                     )
                 event = SecurityEvent.from_dict(event_data)
                 events.append(event)

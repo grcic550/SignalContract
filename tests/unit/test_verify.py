@@ -3,8 +3,8 @@ from signalcontract.verify import verify_contract
 
 
 def test_verify_contract_returns_error_when_matcher_raises(monkeypatch):
-    """Test that from_matcher returns a VerificationResult
-    with status 'FAIL' when the matcher function raises and exception."""
+    """Test that verify_contract returns a VerificationResult
+    when the matcher function raises an exception."""
 
     def broken_matcher(contract, events):
         raise RuntimeError("Something went wrong.")

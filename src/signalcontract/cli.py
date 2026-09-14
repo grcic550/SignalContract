@@ -79,7 +79,7 @@ def verify(
             else:
                 outcome = typer.style(event.outcome, fg=typer.colors.GREEN, bold=True)
 
-            typer.echo(f"  Outcome:  {outcome}")
+            typer.echo(f"  Outcome: {outcome}")
 
         raise typer.Exit(code=0)
 
