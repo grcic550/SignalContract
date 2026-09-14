@@ -48,12 +48,12 @@ def verify(contract: str = typer.Option(..., "--contract"),
                 bold = True
             )
 
-            typer.echo(f"  Event Type:  {event.event_type}")
-            typer.echo(f"  Actor:  {event.actor}")
-            typer.echo(f"  Action:  {event.action}")
-            typer.echo(f"  Target:  {event.target}")
-            typer.echo(f"  Reason:  {event.reason}")
-            typer.echo(f"  Timestamp:  {event.timestamp}")
+            typer.echo(f"  Event Type: {event.event_type}")
+            typer.echo(f"  Actor: {event.actor}")
+            typer.echo(f"  Action: {event.action}")
+            typer.echo(f"  Target: {event.target}")
+            typer.echo(f"  Reason: {event.reason}")
+            typer.echo(f"  Timestamp: {event.timestamp}")
 
             if event.outcome == "denied":
                 outcome = typer.style(
@@ -73,13 +73,21 @@ def verify(contract: str = typer.Option(..., "--contract"),
         raise typer.Exit(code = 0)
 
     if result.status == "FAIL":
-        typer.secho(f"FAIL: {result.reason_code}",fg=typer.colors.RED, bold=True, err=True)
+        typer.secho(
+            f"FAIL: {result.reason_code}",
+            fg=typer.colors.RED, 
+            bold=True, 
+            err=True
+        )
+
         if result.mismatched_fields:
             typer.echo("Mismatched Fields:")
+
             for field, values in result.mismatched_fields.items():
-                typer.echo(f"  Field: {field}")
-                typer.echo(f"    Expected: {values['expected']}")
-                typer.echo(f"    Actual: {values['actual']}")
+                typer.echo(f"Field: {field}")
+                typer.echo(f"Expected: {values['expected']}")
+                typer.echo(f"Actual: {values['actual']}")
+
         raise typer.Exit(code = 1)
     
 
