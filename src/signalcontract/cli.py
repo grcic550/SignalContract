@@ -1,8 +1,8 @@
 import typer
 from signalcontract.contract import load_contract as parse_yaml
 from signalcontract.events import parse_log_file
-from signalcontract.matcher import matcher
-from signalcontract.results import VerificationResult
+from signalcontract.verify import verify_contract
+from importlib.metadata import version as package_version
 from signalcontract.errors import SignalContractError
 
 app = typer.Typer()
@@ -26,9 +26,10 @@ def verify(contract: str = typer.Option(..., "--contract"),
 
     
     try:
-        contract_data = parse_yaml(contract)
-        event_models = parse_log_file(events)
-        result = VerificationResult.from_matcher(contract_data, event_models)
+        verify_result = verify_contract(
+            contract = parse_yaml(contract),
+            events = parse_log_file(events)
+        )
 
     except SignalContractError as e:
         typer.secho(f"Error: {e}",fg=typer.colors.RED, bold=True, err=True)
@@ -38,10 +39,11 @@ def verify(contract: str = typer.Option(..., "--contract"),
         raise typer.Exit(code = 1)
 
 
-    if result.status == "PASS":
-        typer.secho(f"PASS: matched {len(result.matched_events)} event(s).",fg=typer.colors.GREEN, bold=True)
 
-        for index, event in enumerate(result.matched_events, start=1):
+    if verify_result.status == "PASS":
+        typer.secho(f"PASS: matched {len(verify_result.matched_events)} event(s).",fg=typer.colors.GREEN, bold=True)
+
+        for index, event in enumerate(verify_result.matched_events, start=1):
             typer.secho(
                 f"\nMatch {index}:",
                 fg=typer.colors.CYAN,
@@ -72,18 +74,18 @@ def verify(contract: str = typer.Option(..., "--contract"),
 
         raise typer.Exit(code = 0)
 
-    if result.status == "FAIL":
+    if verify_result.status == "FAIL":
         typer.secho(
-            f"FAIL: {result.reason_code}",
+            f"FAIL: {verify_result.reason_code}",
             fg=typer.colors.RED, 
             bold=True, 
             err=True
         )
 
-        if result.mismatched_fields:
+        if verify_result.mismatched_fields:
             typer.echo("Mismatched Fields:")
 
-            for field, values in result.mismatched_fields.items():
+            for field, values in verify_result.mismatched_fields.items():
                 typer.echo(f"Field: {field}")
                 typer.echo(f"Expected: {values['expected']}")
                 typer.echo(f"Actual: {values['actual']}")
@@ -93,7 +95,7 @@ def verify(contract: str = typer.Option(..., "--contract"),
 
 @app.command()
 def version():
-    typer.echo("SignalContract 0.1.0")
+    typer.echo(f"SignalContract {package_version('signalcontract')}")
 
 
 @app.command()
@@ -102,10 +104,31 @@ def validate(contract: str = typer.Option(..., "--contract")):
 
     try:
         parse_yaml(contract)
-        typer.secho(f"Contract file {contract} is valid.", fg=typer.colors.GREEN, bold=True)
 
-    except Exception as e:
-        typer.secho(f"Error: {e}", fg=typer.colors.RED, bold=True, err=True)
+        typer.secho(
+            f"Contract file {contract} is valid.", 
+            fg=typer.colors.GREEN, 
+            bold=True
+        )
+
+    except SignalContractError as e:
+        typer.secho(
+            f"Error: {e}",
+            fg=typer.colors.RED, 
+            bold=True, 
+            err=True
+        )
+
+        raise typer.Exit(code = 1)
+
+    except FileNotFoundError as e:
+        typer.secho(
+            f"Error: File not found: {e.filename}",
+            fg=typer.colors.RED, 
+            bold=True, 
+            err=True
+        )
+
         raise typer.Exit(code = 1)
     
 if __name__ == "__main__":
