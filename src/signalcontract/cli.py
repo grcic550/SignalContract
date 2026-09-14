@@ -2,6 +2,7 @@ import typer
 from signalcontract.contract import load_contract as parse_yaml
 from signalcontract.events import parse_log_file
 from signalcontract.matcher import matcher
+from signalcontract.results import VerificationResult
 from signalcontract.errors import SignalContractError
 
 app = typer.Typer()
@@ -27,7 +28,7 @@ def verify(contract: str = typer.Option(..., "--contract"),
     try:
         contract_data = parse_yaml(contract)
         event_models = parse_log_file(events)
-        matched_events = matcher(contract_data, event_models)
+        result = VerificationResult.from_matcher(contract_data, event_models)
 
     except SignalContractError as e:
         typer.secho(f"Error: {e}",fg=typer.colors.RED, bold=True, err=True)
@@ -36,10 +37,11 @@ def verify(contract: str = typer.Option(..., "--contract"),
         typer.secho(f"Error: File not found: {e.filename}",fg=typer.colors.RED, bold=True, err=True)
         raise typer.Exit(code = 1)
 
-    if matched_events:
-        typer.secho(f"PASS: matched {len(matched_events)} event(s).",fg=typer.colors.GREEN, bold=True)
 
-        for index, event in enumerate(matched_events, start=1):
+    if result.status == "PASS":
+        typer.secho(f"PASS: matched {len(result.matched_events)} event(s).",fg=typer.colors.GREEN, bold=True)
+
+        for index, event in enumerate(result.matched_events, start=1):
             typer.secho(
                 f"\nMatch {index}:",
                 fg=typer.colors.CYAN,
@@ -70,8 +72,16 @@ def verify(contract: str = typer.Option(..., "--contract"),
 
         raise typer.Exit(code = 0)
 
-    typer.secho(f"FAIL: No events matched the contract.",fg=typer.colors.RED, bold=True, err=True)
-    raise typer.Exit(code = 1)
+    if result.status == "FAIL":
+        typer.secho(f"FAIL: {result.reason_code}",fg=typer.colors.RED, bold=True, err=True)
+        if result.mismatched_fields:
+            typer.echo("Mismatched Fields:")
+            for field, values in result.mismatched_fields.items():
+                typer.echo(f"  Field: {field}")
+                typer.echo(f"    Expected: {values['expected']}")
+                typer.echo(f"    Actual: {values['actual']}")
+        raise typer.Exit(code = 1)
+    
 
 @app.command()
 def version():
