@@ -71,9 +71,12 @@ class Contract:
         expected_keys = ["event_type", "actor", "action", "target", "outcome", "reason", "timestamp"]
 
         for field in required_fields:
-            if field not in data or not data[field]:
+            if field not in data:
                 raise ValidationError(f"Missing required contract field {field}.")
 
+        if not data["scenario"]:
+            raise ValidationError("Contract scenario must not be empty.")
+        
         if not isinstance(data["expect"], dict):
             raise ValidationError("Contract expect field must be a dictionary.")
 
