@@ -14,6 +14,7 @@ app = typer.Typer()
 def verify(
     contract: str = typer.Option(..., "--contract"),
     events: str = typer.Option(..., "--events"),
+    correlation_id: str | None = typer.Option(None, "--correlation-id"),
 ):
     """Verify events against the contract."""
     if not contract and not events:
@@ -41,9 +42,16 @@ def verify(
         raise typer.Exit(code=1)
 
     try:
-        verify_result = verify_contract(
-            contract=parse_yaml(contract), events=parse_log_file(events)
-        )
+        loaded_contract = parse_yaml(contract)
+
+        if correlation_id is not None:
+            if not correlation_id.strip():
+                raise SignalContractError(
+                    "correlation_id must be a non-empty string if provided."
+                )
+            loaded_contract.expect["correlation_id"] = correlation_id
+
+        verify_result = verify_contract(loaded_contract, parse_log_file(events))
 
     except SignalContractError as e:
         typer.secho(f"Error: {e}", fg=typer.colors.RED, bold=True, err=True)
