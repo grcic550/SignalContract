@@ -166,3 +166,66 @@ def test_parse_log_file_rejects_malformed_json(tmp_path):
 
     with pytest.raises(EventParseError, match=r"Malformed JSON file"):
         parse_log_file(str(log_file))
+
+
+def test_event_file_contains_private_fields_in_jsonl(tmp_path):
+    """Test that a log file containing private fields
+    raises an EventParseError."""
+
+    log_file = tmp_path / "private_fields.jsonl"
+
+    event_with_private_field = {
+        "event_type": "login",
+        "actor": "user",
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": "2023-10-01T12:00:00Z",
+        "password": "p@ssw0rd",
+        }
+
+    log_file.write_text(json.dumps(event_with_private_field) + "\n")
+
+    with pytest.raises(
+        EventParseError,
+        match=r"Private fields detected in the JSONL "
+        "line 1. Please ensure that sensitive " \
+        "data is not included in the log file.",
+    ) as error:
+        parse_log_file(str(log_file))
+
+    assert "Private fields detected in the JSONL line 1" in str(error.value)
+    assert "Please ensure that sensitive data is not included in the log file." in str(error.value)
+    assert "password" not in str(error.value)
+    assert "p@ssw0rd" not in str(error.value)
+
+def test_event_file_contains_private_fields_in_json(tmp_path):
+
+    log_file = tmp_path / "private_fields.json"
+
+    event_with_private_field = {
+        "event_type": "login",
+        "actor": "user",
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": "2023-10-01T12:00:00Z",
+        "password": "p@ssw0rd",
+    }
+
+    log_file.write_text(json.dumps([event_with_private_field], indent=4))
+
+    with pytest.raises(
+        EventParseError,
+        match=r"Private fields detected in the JSON event " 
+        f"at index 1. Please ensure that sensitive data "
+        f"is not included in the log file."
+    ) as error:
+        parse_log_file(str(log_file))
+
+    assert "Private fields detected in the JSON event at index 1" in str(error.value)
+    assert "Please ensure that sensitive data is not included in the log file." in str(error.value)
+    assert "password" not in str(error.value)
+    assert "p@ssw0rd" not in str(error.value)

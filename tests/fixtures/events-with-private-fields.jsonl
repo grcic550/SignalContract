@@ -1,0 +1,2 @@
+{"event_type": "authorization.denied", "actor": "user-42", "action": "delete_database", "target": "prod_db", "outcome": "denied", "reason": "insufficient_privileges", "timestamp": "2026-08-25T12:01:15Z"}
+{"event_type": "login.success", "actor": "user-1", "action": "login", "target": "system", "outcome": "success", "reason": "valid_credentials", "timestamp": "2026-08-25T12:02:00Z", "password": "SYNTHETIC_TEST_PASSWORD"}

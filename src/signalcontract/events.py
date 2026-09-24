@@ -3,6 +3,7 @@ from pathlib import Path
 
 from signalcontract.errors import EventParseError, ValidationError
 from signalcontract.models import SecurityEvent
+from signalcontract.privacy import contains_private_fields
 
 
 def parse_log_file(file_path: str):
@@ -35,11 +36,21 @@ def parse_jsonl_file(file_path: str):
 
             try:
                 event_data = json.loads(line)
+                
                 if not isinstance(event_data, dict):
                     raise EventParseError(
                         f"JSONL line {line_number} does not "
                         f"contain a valid JSON object."
                     )
+               
+                if contains_private_fields(event_data):
+                    raise EventParseError(
+                        f"Private fields detected in the JSONL "
+                        f"line {line_number}. "
+                        f"Please ensure that sensitive "
+                        f"data is not included in the log file."
+                    )
+
                 event = SecurityEvent.from_dict(event_data)
                 events.append(event)
             except json.JSONDecodeError as e:
@@ -71,6 +82,14 @@ def parse_json_file(file_path: str):
                     f"JSON event at index {index} does not contain a valid JSON object."
                 )
             try:
+                if contains_private_fields(event_data):
+                    raise EventParseError(
+                        f"Private fields detected in the JSON "
+                        f"event at index {index}. "
+                        f"Please ensure that sensitive "
+                        f"data is not included in the log file."
+                    )
+
                 event = SecurityEvent.from_dict(event_data)
                 events.append(event)
             except ValidationError as e:
