@@ -183,22 +183,25 @@ def test_event_file_contains_private_fields_in_jsonl(tmp_path):
         "reason": "user authenticated",
         "timestamp": "2023-10-01T12:00:00Z",
         "password": "p@ssw0rd",
-        }
+    }
 
     log_file.write_text(json.dumps(event_with_private_field) + "\n")
 
     with pytest.raises(
         EventParseError,
         match=r"Private fields detected in the JSONL "
-        "line 1. Please ensure that sensitive " \
+        "line 1. Please ensure that sensitive "
         "data is not included in the log file.",
     ) as error:
         parse_log_file(str(log_file))
 
     assert "Private fields detected in the JSONL line 1" in str(error.value)
-    assert "Please ensure that sensitive data is not included in the log file." in str(error.value)
+    assert "Please ensure that sensitive data is not included in the log file." in str(
+        error.value
+    )
     assert "password" not in str(error.value)
     assert "p@ssw0rd" not in str(error.value)
+
 
 def test_event_file_contains_private_fields_in_json(tmp_path):
 
@@ -219,13 +222,189 @@ def test_event_file_contains_private_fields_in_json(tmp_path):
 
     with pytest.raises(
         EventParseError,
-        match=r"Private fields detected in the JSON event " 
-        f"at index 1. Please ensure that sensitive data "
-        f"is not included in the log file."
+        match=r"Private fields detected in the JSON event "
+        "at index 1. Please ensure that sensitive data "
+        "is not included in the log file.",
     ) as error:
         parse_log_file(str(log_file))
 
     assert "Private fields detected in the JSON event at index 1" in str(error.value)
-    assert "Please ensure that sensitive data is not included in the log file." in str(error.value)
+    assert "Please ensure that sensitive data is not included in the log file." in str(
+        error.value
+    )
     assert "password" not in str(error.value)
     assert "p@ssw0rd" not in str(error.value)
+
+
+def test_event_with_non_string_fields_raises_validation_error():
+    """Test that an event with non-string
+    fields raises a ValidationError."""
+
+    invalid_event = {
+        "event_type": "login",
+        "actor": "user",
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": 1234567890,  # Invalid type: should be a string
+    }
+
+    with pytest.raises(
+        ValidationError,
+        match=r"SecurityEvent field timestamp must be a string and "
+        "not None. Received type: <class 'int'>",
+    ) as error:
+        SecurityEvent.from_dict(invalid_event)
+
+    assert (
+        "SecurityEvent field timestamp must be a string and "
+        "not None. Received type: <class 'int'>" in str(error.value)
+    )
+
+
+def test_event_with_correlation_id_non_string_raises_validation_error():
+    """Test that an event with a non-string correlation_id
+    waises an ValidationError."""
+
+    invalid_event = {
+        "event_type": "login",
+        "actor": "user",
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": "2023-10-01T12:00:00Z",
+        "correlation_id": 1234567890,  # Invalid type: should be a string
+    }
+
+    with pytest.raises(
+        ValidationError,
+        match=r"SecurityEvent field correlation_id must be a string and "
+        "not None. Received type: <class 'int'>",
+    ) as error:
+        SecurityEvent.from_dict(invalid_event)
+
+    assert (
+        "SecurityEvent field correlation_id must be a string and "
+        "not None. Received type: <class 'int'>" in str(error.value)
+    )
+
+
+def test_event_with_correlation_id_empty_string_raises_validation_error():
+    """Test that an event with an empty string correlation_id
+    raises a ValidationError."""
+
+    invalid_event = {
+        "event_type": "login",
+        "actor": "user",
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": "2023-10-01T12:00:00Z",
+        "correlation_id": "",  # Invalid: empty string
+    }
+
+    with pytest.raises(
+        ValidationError,
+        match=r"SecurityEvent field correlation_id must not "
+        "be an empty string.",
+    ) as error:
+        SecurityEvent.from_dict(invalid_event)
+
+    assert "SecurityEvent field correlation_id must not be an empty string." in str(
+        error.value
+    )
+
+
+def test_event_with_empty_string_field_raises_ValidationError():
+    """Test that an event with an empty string field
+    raises a ValidationError."""
+
+    invalid_event = {
+        "event_type": "login",
+        "actor": "user",
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": " ",  # Invalid: empty string
+        "timestamp": "2023-10-01T12:00:00Z",
+    }
+
+    with pytest.raises(
+        ValidationError,
+        match=r"SecurityEvent field reason must not be an empty string.",
+    ) as error:
+        SecurityEvent.from_dict(invalid_event)
+
+    assert "SecurityEvent field reason must not be an empty string." in str(error.value)
+
+
+def test_event_with_none_field_raises_validation_error():
+    """Test that an event with a None field
+    raises a Validation Error."""
+
+    invalid_event = {
+        "event_type": "login",
+        "actor": None,
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": "2023-10-01T12:00:00Z",
+    }
+
+    with pytest.raises(
+        ValidationError,
+        match=r"Missing required security-event field actor",
+    ) as error:
+        SecurityEvent.from_dict(invalid_event)
+
+    assert "Missing required security-event field actor" in str(error.value)
+
+
+def test_event_jsonl_file_with_field_with_none_raises_EventParseError(tmp_path):
+    """Test that a log file containing a field with None
+    raises an EventParseError."""
+
+    log_file = tmp_path / "none_field.jsonl"
+
+    event_with_good_fields = {
+        "event_type": "login",
+        "actor": "user",
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": "2023-10-01T12:00:00Z",
+    }
+
+    event_with_none_field = {
+        "event_type": "login",
+        "actor": None,
+        "action": "login",
+        "target": "system",
+        "outcome": "success",
+        "reason": "user authenticated",
+        "timestamp": "2023-10-01T12:00:00Z",
+    }
+
+    log_file.write_text(
+        json.dumps(event_with_good_fields)
+        + "\n"
+        + json.dumps(event_with_none_field)
+        + "\n"
+    )
+
+    with pytest.raises(
+        EventParseError,
+        match=r"Validation error in JSONL line 2: "
+        "Missing required security-event field actor",
+    ) as error:
+        parse_log_file(str(log_file))
+
+    assert (
+        "Validation error in JSONL line 2: "
+        "Missing required security-event field actor" in str(error.value)
+    )

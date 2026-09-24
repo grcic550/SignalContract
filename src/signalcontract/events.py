@@ -36,13 +36,13 @@ def parse_jsonl_file(file_path: str):
 
             try:
                 event_data = json.loads(line)
-                
+
                 if not isinstance(event_data, dict):
                     raise EventParseError(
                         f"JSONL line {line_number} does not "
                         f"contain a valid JSON object."
                     )
-               
+
                 if contains_private_fields(event_data):
                     raise EventParseError(
                         f"Private fields detected in the JSONL "

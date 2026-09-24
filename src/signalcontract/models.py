@@ -40,9 +40,32 @@ class SecurityEvent:
         ]
 
         for field in required_fields:
-            if field not in data or not data[field]:
+            if field not in data or data[field] is None:
                 raise ValidationError(f"Missing required security-event field {field}")
 
+            if not isinstance(data[field], str):
+                raise ValidationError(
+                    f"SecurityEvent field {field} must be a string and "
+                    f"not None. Received type: {type(data[field])}"
+                )
+            if isinstance(data[field], str) and not data[field].strip():
+                raise ValidationError(
+                    f"SecurityEvent field {field} must not be an empty string."
+                )
+
+        if "correlation_id" in data and data["correlation_id"] is not None:
+            if not isinstance(data["correlation_id"], str):
+                raise ValidationError(
+                    f"SecurityEvent field correlation_id must be a string and "
+                    f"not None. Received type: {type(data['correlation_id'])}"
+                )
+            if (
+                isinstance(data["correlation_id"], str)
+                and not data["correlation_id"].strip()
+            ):
+                raise ValidationError(
+                    "SecurityEvent field correlation_id must not be an empty string."
+                )
         return cls(
             event_type=data["event_type"],
             actor=data["actor"],
