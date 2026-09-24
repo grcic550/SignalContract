@@ -141,7 +141,7 @@ Events can be supplied in either of these formats:
 - `.json`: an array of event objects.
 - `.jsonl`: one event object per line. Blank lines are ignored.
 
-Every event must contain nonempty values for:
+Every event must contain a nonblank string for:
 
 - `event_type`
 - `actor`
@@ -151,7 +151,8 @@ Every event must contain nonempty values for:
 - `reason`
 - `timestamp`
 
-`correlation_id` is optional.
+`correlation_id` is optional. It may be absent or `null`; when supplied as a
+string, it must contain at least one non-whitespace character.
 
 For example:
 
@@ -185,6 +186,17 @@ For `.json` input, event objects must be placed inside an array:
 
 For `.jsonl`, each event must be written as a complete JSON object on a single line.
 
+### Private fields
+
+SignalContract rejects an entire events file if it contains a field named
+`password`, `passwd`, `api_key`, `access_token`, `refresh_token`, or `secret`.
+The check ignores letter case and includes nested objects and lists. It runs
+before events are converted into models, so extra fields are checked too.
+
+The error points to the event index or JSONL line without printing the private
+value. A matching event elsewhere in the file does not cancel the error.
+This checks field names; it does not detect every possible secret hidden in text.
+
 ## Matching behavior
 
 Every expectation defined in the contract must match the same event.
@@ -210,15 +222,21 @@ values from the closest candidate event.
 The tool does not currently:
 
 - enforce time windows;
-- automatically isolate events by correlation ID;
-- validate timestamp formats;
-- perform privacy checks.
+- validate timestamp formats.
 
-A timestamp or correlation ID is compared only when it is explicitly included in
-`expect`.
+A timestamp is compared only when it is included in `expect`.
 
-Input validation currently checks required event fields but does not enforce all
-event-field types.
+To check one particular request, include `correlation_id` in `expect` or supply
+`--correlation-id` when running `verify`. A nonempty CLI value takes precedence
+over the ID in the contract for that invocation; the YAML file is not changed.
+If you omit the option, the contract is used as written.
+
+The ID is another exact-match condition. Without one, an older matching event can
+satisfy the contract. All supplied events still undergo validation and private-field
+checks, including events with other IDs.
+
+An empty or whitespace-only CLI ID is rejected as an input error. IDs do not have
+to be UUIDs; any nonblank string is accepted and compared exactly as supplied.
 
 ## Examples
 
@@ -327,6 +345,60 @@ Malformed records are reported rather than silently skipped.
 Verification failures and handled input errors both currently use exit code `1`.
 Their messages and reason codes indicate the cause of the failure.
 
+## Try the demo app
+
+The small FastAPI app in `examples/demo_app` simulates an attempt to delete a
+database. It uses a fixed fictional user, John (`user-42`), whose role is `user`.
+It returns `403 Forbidden` and writes a denial event. There is no real database
+or login system in this demo.
+
+After `uv sync`, start the app from the repository root:
+
+```bash
+uv run fastapi dev
+```
+
+Leave that terminal running. Open `http://127.0.0.1:8000/docs`, expand
+`DELETE /databases/prod_db`, and choose **Try it out**, then **Execute**.
+You can also send the request from a second terminal:
+
+```bash
+curl -i -X DELETE http://127.0.0.1:8000/databases/prod_db
+```
+
+The response includes an `X-Correlation-ID` header. The app writes that same ID
+into `examples/demo_app/event_denied.jsonl`, alongside the denial details and a
+UTC timestamp. Each denied request gets a new ID and adds one line to the file.
+
+Copy the response ID and use it in the following command, replacing
+`PASTE_RESPONSE_ID_HERE`:
+
+```bash
+uv run signalcontract verify \
+    --contract tests/fixtures/valid-contract.yaml \
+    --events examples/demo_app/event_denied.jsonl \
+    --correlation-id PASTE_RESPONSE_ID_HERE
+```
+
+You should see `PASS: matched 1 event(s).` The HTTP response is a denial, but the
+verification passes because the application recorded the denial your contract
+expects.
+
+### Check what happens when logging breaks
+
+Keep the existing log, then temporarily comment out the demo's file-writing block.
+Send another DELETE request and verify using its new response ID. The application
+still returns `403`, but SignalContract should report `FAIL: MISMATCHED_FIELDS`:
+the older event has a different correlation ID. Restore the file-writing block
+afterward.
+
+You can also temporarily change the logged `outcome` to `success`, send a new
+request, and verify its ID. Verification should fail because the event contradicts
+the expected `denied` outcome. Restore `denied` when finished.
+
+The generated log is local demo output. Use the ID from each response rather than
+reusing an ID from an earlier run.
+
 ## Run the tests
 
 Run the full test suite:
@@ -360,6 +432,9 @@ and command-line behavior.
 
 SignalContract is under active development.
 
-Planned areas of development include privacy-aware log validation, correlation-aware
-verification, time-window rules, machine-readable verification output, and additional
-security-event validation.
+The current version checks event fields, rejects forbidden private fields, and
+supports exact matching for individual request IDs. The demo connects those checks
+to events generated by an HTTP request.
+
+Next steps include adding time-window rules and providing machine-readable
+verification output.
