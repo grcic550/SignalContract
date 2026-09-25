@@ -5,6 +5,8 @@ import typer
 from signalcontract.contract import load_contract as parse_yaml
 from signalcontract.errors import SignalContractError
 from signalcontract.events import parse_log_file
+from signalcontract.runner import runner as run_test
+from signalcontract.scenario import load_scenario
 from signalcontract.verify import verify_contract
 
 app = typer.Typer()
@@ -139,6 +141,130 @@ def validate(contract: str = typer.Option(..., "--contract")):
             err=True,
         )
 
+        raise typer.Exit(code=1) from None
+
+
+@app.command()
+def run(
+    url: str = typer.Option(..., "--url"),
+    request_method: str = typer.Option(..., "--method"),
+    request_path: str = typer.Option(..., "--path"),
+    expected_status_code: int = typer.Option(..., "--expected-status"),
+    contract_path: str = typer.Option(..., "--contract"),
+    event_log_path: str = typer.Option(..., "--events"),
+):
+    """Run a test against a contract and return the result."""
+
+    try:
+        run_result = run_test(
+            url,
+            request_method,
+            request_path,
+            expected_status_code,
+            contract_path,
+            event_log_path,
+        )
+
+        if run_result.status == "PASS":
+            typer.secho(
+                f"PASS: {run_result.scenario_name} - "
+                f"Expected status: {run_result.expected_status}, "
+                f"Actual status: {run_result.actual_status}",
+                fg=typer.colors.GREEN,
+                bold=True,
+            )
+            raise typer.Exit(code=0)
+
+        if run_result.status == "FAIL":
+            typer.secho(
+                f"FAIL: {run_result.scenario_name} - "
+                f"Expected status: {run_result.expected_status}, "
+                f"Actual status: {run_result.actual_status}, "
+                f"Error code: {run_result.error_code}",
+                fg=typer.colors.RED,
+                bold=True,
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+        if run_result.status == "ERROR":
+            typer.secho(
+                f"ERROR: {run_result.scenario_name} - "
+                f"Error code: {run_result.error_code}",
+                fg=typer.colors.RED,
+                bold=True,
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+    except SignalContractError as e:
+        typer.secho(
+            f"Error: {e}",
+            fg=typer.colors.RED,
+            bold=True,
+            err=True,
+        )
+
+
+@app.command()
+def run_scenario(
+    scenario_file: str = typer.Option(..., "--scenario"),
+    url: str = typer.Option(..., "--url"),
+    events: str = typer.Option(..., "--events"),
+):
+    """Run a test scenario defined in a YAML file
+    against a contract and return the result."""
+
+    try:
+        scenario = load_scenario(scenario_file)
+
+        run_result = run_test(
+            url,
+            scenario.request_method,
+            scenario.request_path,
+            scenario.expected_status,
+            scenario.contract_path,
+            events,
+        )
+
+        if run_result.status == "PASS":
+            typer.secho(
+                f"PASS: {run_result.scenario_name} - "
+                f"Expected status: {run_result.expected_status}, "
+                f"Actual status: {run_result.actual_status}",
+                fg=typer.colors.GREEN,
+                bold=True,
+            )
+            raise typer.Exit(code=0)
+
+        if run_result.status == "FAIL":
+            typer.secho(
+                f"FAIL: {run_result.scenario_name} - "
+                f"Expected status: {run_result.expected_status}, "
+                f"Actual status: {run_result.actual_status}, "
+                f"Error code: {run_result.error_code}",
+                fg=typer.colors.RED,
+                bold=True,
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+        if run_result.status == "ERROR":
+            typer.secho(
+                f"ERROR: {run_result.scenario_name} - "
+                f"Error code: {run_result.error_code}",
+                fg=typer.colors.RED,
+                bold=True,
+                err=True,
+            )
+            raise typer.Exit(code=1)
+    except SignalContractError as e:
+        typer.secho(
+            f"Error: {e}",
+            fg=typer.colors.RED,
+            bold=True,
+            err=True,
+        )
         raise typer.Exit(code=1) from None
 
 
