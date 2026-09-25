@@ -1,0 +1,9 @@
+version: 1
+name: denied_admin_delete
+
+request:
+  method: DELETE
+  path: /databases/prod_db
+
+expected_status: 403
+contract: ../contracts/denied-admin-delete.yaml

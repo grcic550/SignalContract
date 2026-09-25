@@ -163,3 +163,112 @@ class Contract:
         return cls(
             version=data["version"], scenario=data["scenario"], expect=data["expect"]
         )
+
+
+@dataclass
+class Scenario:
+    """Represents a test scenario with its associated
+    metadata and events."""
+
+    version: int
+    name: str
+    request_method: str
+    request_path: str
+    expected_status: int
+    contract_path: str
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Converts a raw dictionary into a type-safe
+        Scenario model. Rejects the input and raises a
+        ValidationError if required fields are missing."""
+
+        required_fields = [
+            "version",
+            "name",
+            "request",
+            "expected_status",
+            "contract",
+        ]
+
+        if not isinstance(data, dict):
+            raise ValidationError(
+                f"Scenario data must be a dictionary, but got {type(data)}"
+            )
+
+        for field in required_fields:
+            if field not in data:
+                raise ValidationError(f"Missing required scenario field {field}.")
+
+            if not data[field]:
+                raise ValidationError(f"Scenario field {field} must not be empty.")
+
+        if not isinstance(data["request"], dict):
+            raise ValidationError(
+                f"Scenario request field must be a dictionary, "
+                f"but got {type(data['request'])}"
+            )
+        elif isinstance(data["request"], dict):
+            if "method" not in data["request"]:
+                raise ValidationError(
+                    "Missing required scenario request field 'method'."
+                )
+            if "path" not in data["request"]:
+                raise ValidationError("Missing required scenario request field 'path'.")
+
+        if (
+            not isinstance(data["version"], (int, float))
+            or data["version"] != 1.0
+            or isinstance(data["version"], bool)
+        ):
+            raise ValidationError(
+                "Scenario version must be an integer and equal "
+                "to 1 because only version 1 is supported."
+            )
+
+        if data["request"]["method"] not in [
+            "GET",
+            "POST",
+            "DELETE",
+            "PUT",
+            "PATCH",
+            "HEAD",
+            "OPTIONS",
+        ]:
+            raise ValidationError(
+                f"Scenario request -> method must be one of "
+                f"['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'HEAD', 'OPTIONS'], "
+                f"but got {data['request']['method']} "
+            )
+
+        if isinstance(data["request"]["path"], str):
+            if not data["request"]["path"].startswith("/"):
+                raise ValidationError(
+                    f"Scenario request -> path must start with a forward slash '/', "
+                    f"but got {data['request']['path']}"
+                )
+
+        elif not isinstance(data["request"]["path"], str):
+            raise ValidationError(
+                f"Scenario request -> path must be a string, "
+                f"but got {type(data['request']['path'])}"
+            )
+
+        if (
+            isinstance(data["expected_status"], bool)
+            or not isinstance(data["expected_status"], int)
+            or not (100 <= data["expected_status"] <= 599)
+        ):
+            raise ValidationError(
+                f"Scenario expected_status must be an integer "
+                f"between 100 and 599, but got {data['expected_status']}"
+            )
+
+        return cls(
+            version=data["version"],
+            name=data["name"],
+            request_method=data["request"]["method"],
+            request_path=data["request"]["path"],
+            expected_status=data["expected_status"],
+            contract_path=data["contract"],
+        )
